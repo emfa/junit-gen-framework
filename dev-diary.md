@@ -27,3 +27,46 @@
 ### 🔜 Next Step:
 - Parse staged `.java` files to extract class + method info
 - Begin generating structured JUnit test stubs
+
+
+
+## 🗓️ April 9, 2025
+
+### ✅ What was done:
+- Created and implemented `JavaSourceParser` to extract:
+  - Package name
+  - Class name
+  - Public method names
+- Successfully parsed a sample Java file and validated output
+- Clarified purpose of parsing:
+  - Parser provides metadata
+  - Full `.java` file is still passed to AI for context
+- Implemented `MockAIService` to simulate AI-generated test class creation
+- Created `TestFileWriter` to:
+  - Write test class to appropriate `src/test/java/<package>` path
+  - Automatically create folders if missing
+- Fully wired the flow in CLI:
+  - Detect `.java` file
+  - Parse → Mock AI → Write test
+- Ran a complete end-to-end test:
+  - Staged a `.java` file
+  - CLI detected it
+  - Parser extracted info
+  - Mock AI generated a JUnit test class
+  - Test file saved correctly in the project
+
+### 🐞 Problems faced:
+- None — smooth sailing 🚤
+
+### 🧠 Learnings:
+- Full `.java` file must be sent to AI to generate meaningful tests, even if only a portion was modified
+- Parser is only for tool-side logic (naming, location, etc.), not for test generation logic
+
+### 📈 Outcome:
+- MVP of the AI test generator working end-to-end 🎉
+- CLI tool now generates and saves a basic test class from a staged `.java` file
+
+### 🔜 Next Step:
+- Generate one `@Test` method for each public method
+- Improve CLI summaries and UX
+- Explore AI integration or prompt refinement
