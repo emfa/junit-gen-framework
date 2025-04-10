@@ -1,7 +1,9 @@
 package com.aigen.junitgen.cli;
 
-import com.aigen.junitgen.ai.MockAIService;
+import com.aigen.junitgen.ai.AITestGenerator;
+import com.aigen.junitgen.ai.MockTestGenerator;
 import com.aigen.junitgen.git.GitDiffService;
+import com.aigen.junitgen.model.AIInput;
 import com.aigen.junitgen.parser.JavaSourceParser;
 import com.aigen.junitgen.writer.TestFileWriter;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -36,7 +38,7 @@ public class JUnitGenCLI implements Runnable{
         try {
             GitDiffService diffService = new GitDiffService();
             JavaSourceParser parser = new JavaSourceParser();
-            MockAIService aiService = new MockAIService();
+            AITestGenerator aiService = new MockTestGenerator();
             TestFileWriter testWriter = new TestFileWriter();
 
             List<DiffEntry> diffs = diffService.getStagedChanges(projectPath);
@@ -62,7 +64,7 @@ public class JUnitGenCLI implements Runnable{
 
                     String fullSource = Files.readString(filePath);
 
-                    String testContent = aiService.generateTestClass(fullSource, parsed.className, parsed.packageName);
+                    String testContent = aiService.generateTestClass(new AIInput(parsed.packageName, parsed.className, fullSource, parsed.publicMethods));
 
                     Path testPath = testWriter.writeTestFile(projectPath, parsed.packageName, parsed.className, testContent);
 

@@ -29,6 +29,8 @@
 - Begin generating structured JUnit test stubs
 
 
+### -------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 ## 🗓️ April 9, 2025
 
@@ -70,3 +72,36 @@
 - Generate one `@Test` method for each public method
 - Improve CLI summaries and UX
 - Explore AI integration or prompt refinement
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+## 🗓️ April 10, 2025
+
+### ✅ What was done:
+- Enhanced `MockAIService` to:
+  - Generate one `@Test` stub per public method
+  - Ignore `main()` method (not unit-testable)
+  - Use more expressive test method names (`method_shouldBehaveAsExpected`)
+- Introduced `AIInput` model:
+  - Encapsulates package name, class name, source code, and public methods
+  - Prepares the system for integration with real AI test generation
+- Refactored `MockAIService` into a clean interface-driven architecture:
+  - Created `AITestGenerator` interface
+  - Implemented `MockTestGenerator` as a first concrete class
+  - CLI now uses the interface — making the AI engine pluggable
+
+### 🐞 Problems faced:
+- None — feature flow was smooth
+
+### 📈 Outcome:
+- Core AI generation flow now has proper interfaces and separation of concerns
+- Ready to plug in OpenAI, Claude, or local LLMs without touching the core logic
+
+### 🔜 Next Step:
+- Simulate or wire up a real AI-based test generation module
+- Add test project config (`.junitgenrc`, etc.) to customize AI prompt behavior
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------
