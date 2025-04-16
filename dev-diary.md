@@ -104,4 +104,36 @@
 - Add test project config (`.junitgenrc`, etc.) to customize AI prompt behavior
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------
+### -----------------------------------------------------------------------------------------------------------------------------
+
+
+## 🗓️ April 16, 2025
+
+### ✅ What was done:
+- Integrated real AI model support into the test generation flow
+- Implemented `OpenAITestGenerator` with Chat Completions API
+- Handled OpenAI quota error gracefully and logged it in CLI
+- Switched to **Google Gemini (AI Studio)** for API-based generation:
+  - Created `GeminiTestGenerator` implementing `AITestGenerator`
+  - Reused `OpenAIPromptBuilder` to maintain consistent prompts
+  - Parsed Gemini response using robust JSON checks
+- Successfully ran the CLI → staged `.java` → Gemini generated a full test class:
+  - Multiple test cases
+  - `@BeforeEach` setup
+  - Smart assertions and meaningful structure
+
+### 🐞 Problems faced:
+- OpenAI quota exhausted → Switched to Gemini (free + fast)
+- Initial Gemini response parsing missed JSON structure → Fixed with raw response debug
+
+### 📈 Outcome:
+- MVP now has **real AI test generation working** from staged code
+- Test output is robust, readable, and actually useful
+- Gemini fully plugged into system and functional
+
+### 🔜 Next Step:
+- Add CLI support to switch models (Gemini/OpenAI)
+- Add dry-run preview option
+- Enhance prompt structure or naming logic
+
+### -----------------------------------------------------------------------------------------------------------------------------

@@ -1,7 +1,9 @@
 package com.aigen.junitgen.cli;
 
 import com.aigen.junitgen.ai.AITestGenerator;
+import com.aigen.junitgen.ai.GeminiTestGenerator;
 import com.aigen.junitgen.ai.MockTestGenerator;
+import com.aigen.junitgen.ai.OpenAITestGenerator;
 import com.aigen.junitgen.git.GitDiffService;
 import com.aigen.junitgen.model.AIInput;
 import com.aigen.junitgen.parser.JavaSourceParser;
@@ -38,7 +40,10 @@ public class JUnitGenCLI implements Runnable{
         try {
             GitDiffService diffService = new GitDiffService();
             JavaSourceParser parser = new JavaSourceParser();
-            AITestGenerator aiService = new MockTestGenerator();
+//            AITestGenerator aiService = new MockTestGenerator();
+//            AITestGenerator aiService = new OpenAITestGenerator(System.getenv("OPENAI_API_KEY"),"gpt-3.5-turbo");
+            AITestGenerator aiService = new GeminiTestGenerator(System.getenv("GEMINI_API_KEY"));
+
             TestFileWriter testWriter = new TestFileWriter();
 
             List<DiffEntry> diffs = diffService.getStagedChanges(projectPath);
