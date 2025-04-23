@@ -21,7 +21,9 @@ public class OpenAIPromptBuilder {
         }
 
         prompt.append("Use best practices such as:\n")
-                .append("- Descriptive test method names\n")
+                .append("- Descriptive test method names like\n")
+                .append("    • shouldReturnX_whenY\n")
+                .append("    • shouldThrowException_whenInvalidInput\n")
                 .append("- `@BeforeEach` setup with `@InjectMocks` and `@Mock` using Mockito\n")
                 .append("- Use of `when(...).thenReturn(...)` for mocking behavior\n")
                 .append("- Use of `assertEquals`, `assertThrows`, etc. or other relevant assertions\n")

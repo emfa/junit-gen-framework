@@ -9,6 +9,7 @@ import com.aigen.junitgen.config.JunitGenConfigLoader;
 import com.aigen.junitgen.git.GitDiffService;
 import com.aigen.junitgen.model.AIInput;
 import com.aigen.junitgen.parser.JavaSourceParser;
+import com.aigen.junitgen.util.TestOutputFormatter;
 import com.aigen.junitgen.writer.TestFileWriter;
 import org.eclipse.jgit.diff.DiffEntry;
 import picocli.CommandLine.Option;
@@ -34,6 +35,9 @@ public class JUnitGenCLI implements Runnable {
 
     @Option(names = "--dry-run", description = "Print test content instead of writing to file")
     boolean dryRun;
+
+    @Option(names = "--debug-prompt", description = "Prints the AI prompt before sending")
+    boolean debugPrompt;
 
     @Override
     public void run() {
@@ -103,14 +107,14 @@ public class JUnitGenCLI implements Runnable {
 
                     String fullSource = Files.readString(filePath);
 
-                    String testContent = aiService.generateTestClass(new AIInput(parsed.packageName, parsed.className, fullSource, parsed.publicMethods));
+                    String testContent = aiService.generateTestClass(new AIInput(parsed.packageName, parsed.className, fullSource, parsed.publicMethods),debugPrompt);
 
                     if (dryRun) {
                         System.out.println("\n--- BEGIN GENERATED TEST ---\n");
                         System.out.println(testContent);
                         System.out.println("\n--- END GENERATED TEST ---\n");
                     } else {
-                        Path testPath = testWriter.writeTestFile(projectPath, parsed.packageName, parsed.className, testContent);
+                        Path testPath = testWriter.writeTestFile(projectPath, parsed.packageName, parsed.className, TestOutputFormatter.clean(testContent));
                         System.out.println("Test written to: " + testPath);
                     }
                 }

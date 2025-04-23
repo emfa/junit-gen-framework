@@ -189,3 +189,53 @@
 **v0.1 – MVP complete. Project is usable, extensible, and AI-powered.**
 
 ### -----------------------------------------------------------------------------------------------------------------------------
+
+## 🗓️ April 22, 2025
+
+### ✅ What was done:
+
+#### ✔️ Tool Enhancements
+- Implemented **smarter test method naming** in `MockTestGenerator`
+- Added **`TestOutputFormatter`** to clean up AI output:
+  - Removed markdown, smart quotes, blank lines
+- Added `--debug-prompt` CLI flag to preview AI prompts before sending
+- Improved AI prompt quality with:
+  - Naming conventions (`shouldX_whenY`)
+  - Mockito usage
+  - Cleaner, structured prompt for better AI output
+
+#### ✔️ Testing & Analysis
+- Successfully tested:
+  - Multiple staged file processing
+  - Partial file changes
+  - Staged files with interdependencies
+- Confirmed current system:
+  - ✅ Handles multiple files individually
+  - ⚠️ Does not yet support cross-file dependency injection
+- Validated that AI hallucination happens when it lacks context (e.g., incorrect constructors)
+
+#### 💡 Key Insight:
+> The AI will only generate correct tests when it's aware of dependencies.
+> Therefore, a full project-wide scan + context caching mechanism is required to enable intelligent, accurate generation.
+
+---
+
+### 📌 Strategic Feature Planned: **Code Sync-Up**
+
+#### ✅ Core Capabilities:
+- Parses all `.java` files in the project
+- Builds a cached index of:
+  - Classes, methods, fields
+  - File dependencies (who uses what)
+- Injects referenced classes automatically into AI prompts
+- Supports manual trigger (`ai-junit-gen scan`)
+- Will power smart re-generation of tests for files indirectly impacted by changes
+
+---
+
+### 📌 Additional Insight:
+> “When one file changes, test generation should extend to all files that depend on it — not just the file itself.”
+
+This is now a core requirement for the tool moving forward (v0.2+)
+
+### -----------------------------------------------------------------------------------------------------------------------------

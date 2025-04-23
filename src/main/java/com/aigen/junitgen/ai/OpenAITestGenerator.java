@@ -22,8 +22,14 @@ public class OpenAITestGenerator implements AITestGenerator {
     }
 
     @Override
-    public String generateTestClass(AIInput input) {
+    public String generateTestClass(AIInput input, boolean debugPrompt) {
         String prompt = promptBuilder.buildPrompt(input);
+
+        if (debugPrompt) {
+            System.out.println("\n--- BEGIN PROMPT ---\n");
+            System.out.println(prompt);
+            System.out.println("\n--- END PROMPT ---\n");
+        }
 
         try {
             HttpRequest request = buildRequest(prompt);

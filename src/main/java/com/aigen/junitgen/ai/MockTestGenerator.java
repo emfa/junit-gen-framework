@@ -7,7 +7,7 @@ import java.util.List;
 public class MockTestGenerator implements AITestGenerator{
 
     @Override
-    public String generateTestClass(AIInput input) {
+    public String generateTestClass(AIInput input, boolean debugPrompt) {
         // Simulated AI output - in real version this would be generated from a real AI model
 
         String testClassName = input.className + "Test";
@@ -34,8 +34,9 @@ public class MockTestGenerator implements AITestGenerator{
                     .append("    }\n");
         } else {
             for (String method : filteredMethods) {
+                String testName = generateTestMethodName(method);
                 sb.append("    @Test\n")
-                        .append("    void ").append(method).append("_shouldBehaveAsExpected").append("() {\n")
+                        .append("    void ").append(testName).append("() {\n")
                         .append("        // TODO: Add test for ").append(method).append("\n")
                         .append("        fail(\"Not yet implemented\");\n")
                         .append("    }\n\n");
@@ -44,6 +45,10 @@ public class MockTestGenerator implements AITestGenerator{
 
         sb.append("}\n");
         return sb.toString();
+    }
+
+    private String generateTestMethodName(String method) {
+        return "should" + capitalize(method) + "_whenValidInputsProvided";
     }
 
     private String capitalize(String methodName) {
