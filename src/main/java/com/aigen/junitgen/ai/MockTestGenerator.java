@@ -1,13 +1,14 @@
 package com.aigen.junitgen.ai;
 
 import com.aigen.junitgen.model.AIInput;
+import com.aigen.junitgen.scan.ClassIndex;
 
 import java.util.List;
 
 public class MockTestGenerator implements AITestGenerator{
 
     @Override
-    public String generateTestClass(AIInput input, boolean debugPrompt) {
+    public String generateTestClass(AIInput input, boolean debugPrompt, ClassIndex classIndex) {
         // Simulated AI output - in real version this would be generated from a real AI model
 
         String testClassName = input.className + "Test";

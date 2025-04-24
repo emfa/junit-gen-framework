@@ -2,19 +2,21 @@ package com.aigen.junitgen.cli;
 
 import com.aigen.junitgen.ai.AITestGenerator;
 import com.aigen.junitgen.ai.GeminiTestGenerator;
-import com.aigen.junitgen.ai.MockTestGenerator;
 import com.aigen.junitgen.ai.OpenAITestGenerator;
 import com.aigen.junitgen.config.JunitGenConfig;
 import com.aigen.junitgen.config.JunitGenConfigLoader;
 import com.aigen.junitgen.git.GitDiffService;
 import com.aigen.junitgen.model.AIInput;
 import com.aigen.junitgen.parser.JavaSourceParser;
+import com.aigen.junitgen.scan.ClassIndex;
+import com.aigen.junitgen.scan.ProjectScanner;
 import com.aigen.junitgen.util.TestOutputFormatter;
 import com.aigen.junitgen.writer.TestFileWriter;
 import org.eclipse.jgit.diff.DiffEntry;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -42,6 +44,18 @@ public class JUnitGenCLI implements Runnable {
     @Override
     public void run() {
 
+        // Scan all files and build class index
+        ProjectScanner scanner = new ProjectScanner(projectPath);
+        ClassIndex classIndex = new ClassIndex();
+
+        try {
+            classIndex.addAll(scanner.scan());
+            classIndex.printSummary();
+        } catch (IOException e) {
+            System.err.println("Failed to scan project: " + e.getMessage());
+            return;
+        }
+
         JunitGenConfig config = JunitGenConfigLoader.loadConfig(projectPath.toFile());
 
         if (model == null || model.isBlank()) {
@@ -56,7 +70,6 @@ public class JUnitGenCLI implements Runnable {
             System.out.println("Enabling dry-run mode from config");
         }
 
-
         System.out.println("Analyzing Git diff in: " + projectPath);
         System.out.println("Diff type selected: " + diffType);
 
@@ -66,11 +79,11 @@ public class JUnitGenCLI implements Runnable {
         }
 
         try {
-            AITestGenerator aiService;
+
             GitDiffService diffService = new GitDiffService();
             JavaSourceParser parser = new JavaSourceParser();
-//            AITestGenerator aiService = new MockTestGenerator();
-
+            AITestGenerator aiService;
+            TestFileWriter testWriter = new TestFileWriter();
 
             switch (model.toLowerCase()) {
                 case "openai":
@@ -81,8 +94,6 @@ public class JUnitGenCLI implements Runnable {
                     aiService = new GeminiTestGenerator(System.getenv("GEMINI_API_KEY"));
                     break;
             }
-
-            TestFileWriter testWriter = new TestFileWriter();
 
             List<DiffEntry> diffs = diffService.getStagedChanges(projectPath);
 
@@ -97,7 +108,7 @@ public class JUnitGenCLI implements Runnable {
                 for (DiffEntry diff : javaDiffs) {
                     System.out.printf("  %-6s %s%n", diff.getChangeType(), diff.getNewPath());
 
-                    // Resolve file path in project dir
+                    // Resolve filepath in project dir
                     Path filePath = projectPath.resolve(diff.getNewPath());
                     JavaSourceParser.ParsedJavaFile parsed = parser.parse(filePath);
 
@@ -107,7 +118,7 @@ public class JUnitGenCLI implements Runnable {
 
                     String fullSource = Files.readString(filePath);
 
-                    String testContent = aiService.generateTestClass(new AIInput(parsed.packageName, parsed.className, fullSource, parsed.publicMethods),debugPrompt);
+                    String testContent = aiService.generateTestClass(new AIInput(parsed.packageName, parsed.className, fullSource, parsed.publicMethods), debugPrompt, classIndex);
 
                     if (dryRun) {
                         System.out.println("\n--- BEGIN GENERATED TEST ---\n");

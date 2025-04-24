@@ -239,3 +239,50 @@
 This is now a core requirement for the tool moving forward (v0.2+)
 
 ### -----------------------------------------------------------------------------------------------------------------------------
+
+## 🗓️ April 24, 2025
+
+### ✅ What was done:
+
+#### ✔️ Core Feature: Code Sync-Up – Phase 2 Complete
+- Implemented `ProjectScanner` to parse both `src/main/java` and `src/test/java`
+- Captured all `.java` files into structured `ClassInfo` objects
+- Built `ClassIndex` as in-memory representation of project structure
+- Detected:
+  - Public methods
+  - Fields
+  - Imports
+  - Test class presence
+
+#### ✔️ Prompt Intelligence
+- Created `PromptAugmentor` to inject class dependencies into AI prompt
+- Injected supporting class source code (e.g., `Order`, `OrderRepository`) based on imports
+- Prompt dynamically includes dependencies via `ClassIndex`
+- Added `fullyQualifiedName` to `AIInput` for accurate dependency resolution
+
+#### ✔️ Full End-to-End Validation
+- Staged a service file (`OrderService`)
+- Verified enriched prompt contained all dependencies
+- Ran Gemini AI test generation
+- Output tests:
+  - Used correct field/method names
+  - Used Mockito correctly
+  - Covered edge cases and logic branches
+
+#### 🧪 Test Coverage Validation (Jacoco)
+- Tested on a small real-world Spring Boot project
+- Achieved **100% test coverage** on target class
+- Confirmed: generated tests were executable and meaningful
+- Validated: prompt injection + AI flow = fully functional, not hypothetical
+
+---
+
+### 🏷️ Milestone: `v0.2`
+**Smarter AI Test Generation with Full Project Awareness**
+
+- Project structure indexed
+- Prompts enriched with relevant type dependencies
+- Tests generated with context
+- Demonstrated real 100% code coverage on a tested class
+
+### -----------------------------------------------------------------------------------------------------------------------------

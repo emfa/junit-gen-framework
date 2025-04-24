@@ -1,6 +1,8 @@
 package com.aigen.junitgen.ai;
 
 import com.aigen.junitgen.model.AIInput;
+import com.aigen.junitgen.prompt.PromptAugmentor;
+import com.aigen.junitgen.scan.ClassIndex;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -8,7 +10,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.*;
 import java.time.Duration;
-import java.util.List;
 
 public class GeminiTestGenerator implements AITestGenerator {
 
@@ -21,8 +22,10 @@ public class GeminiTestGenerator implements AITestGenerator {
     }
 
     @Override
-    public String generateTestClass(AIInput input, boolean debugPrompt) {
+    public String generateTestClass(AIInput input, boolean debugPrompt, ClassIndex classIndex) {
         String prompt = promptBuilder.buildPrompt(input);
+
+        prompt = PromptAugmentor.enrichPrompt(input,classIndex,prompt);
 
         if (debugPrompt) {
             System.out.println("\n--- BEGIN PROMPT ---\n");
