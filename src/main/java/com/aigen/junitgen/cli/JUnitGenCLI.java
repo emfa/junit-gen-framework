@@ -7,6 +7,7 @@ import com.aigen.junitgen.config.JunitGenConfig;
 import com.aigen.junitgen.config.JunitGenConfigLoader;
 import com.aigen.junitgen.git.GitDiffService;
 import com.aigen.junitgen.model.AIInput;
+import com.aigen.junitgen.model.ClassInfo;
 import com.aigen.junitgen.parser.JavaSourceParser;
 import com.aigen.junitgen.scan.ClassIndex;
 import com.aigen.junitgen.scan.ProjectScanner;
@@ -19,7 +20,9 @@ import picocli.CommandLine.Command;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Command(name = "junitgen", mixinStandardHelpOptions = true, version = "0.1",
         description = "AI-powered JUnit test generator")
@@ -41,8 +44,22 @@ public class JUnitGenCLI implements Runnable {
     @Option(names = "--debug-prompt", description = "Prints the AI prompt before sending")
     boolean debugPrompt;
 
+    @Option(names = "--test-overwrite", description = "What to do if test file already exists: skip, warn, or overwrite", defaultValue = "warn")
+    String overwriteMode;
+
+    @Option(names = "--file", description = "Generate test for a specific .java file (bypasses Git)")
+    Path singleFile;
+
+    @Option(names = "--folder", description = "Generate tests for all .java files in this folder (recursively)")
+    Path folder;
+
     @Override
     public void run() {
+
+        int totalProcessed = 0;
+        int testsWritten = 0;
+        int testsSkipped = 0;
+        int testsErrored = 0;
 
         // Scan all files and build class index
         ProjectScanner scanner = new ProjectScanner(projectPath);
@@ -95,45 +112,117 @@ public class JUnitGenCLI implements Runnable {
                     break;
             }
 
-            List<DiffEntry> diffs = diffService.getStagedChanges(projectPath);
+            Set<Path> filesToGenerate = new HashSet<>();
 
-            List<DiffEntry> javaDiffs = diffs.stream()
-                    .filter(diff -> diff.getNewPath().endsWith(".java"))
-                    .toList();
-
-            if (javaDiffs.isEmpty()) {
-                System.out.println("No staged Java files found.");
+            if (singleFile != null) {
+                if (Files.exists(singleFile) && singleFile.toString().endsWith(".java")) {
+                    filesToGenerate.add(singleFile);
+                } else {
+                    System.out.println("Invalid or non-java file: " + singleFile);
+                    return;
+                }
+            } else if (folder != null) {
+                try {
+                    Files.walk(folder)
+                            .filter(Files::isRegularFile)
+                            .filter(path -> path.toString().endsWith(".java"))
+                            .filter(path -> !path.toString().contains("/test/")) // avoid test files
+                            .forEach(filesToGenerate::add);
+                } catch (IOException e) {
+                    System.err.println("Failed to read folder: " + e.getMessage());
+                    return;
+                }
             } else {
-                System.out.println("Staged Java file changes:");
-                for (DiffEntry diff : javaDiffs) {
-                    System.out.printf("  %-6s %s%n", diff.getChangeType(), diff.getNewPath());
+                // fallback to Git mode
+                List<DiffEntry> diffs = diffService.getStagedChanges(projectPath);
 
-                    // Resolve filepath in project dir
-                    Path filePath = projectPath.resolve(diff.getNewPath());
-                    JavaSourceParser.ParsedJavaFile parsed = parser.parse(filePath);
+                List<DiffEntry> javaDiffs = diffs.stream()
+                        .filter(diff -> diff.getNewPath().endsWith(".java"))
+                        .toList();
+                if (javaDiffs.isEmpty()) {
+                    System.out.println("No staged Java files found.");
+                } else {
+                    System.out.println("Staged Java files found.");
+                    for (DiffEntry diff : javaDiffs) {
+                        Path path = projectPath.resolve(diff.getNewPath());
+                        filesToGenerate.add(path);
 
-                    System.out.println("Package: " + parsed.packageName);
-                    System.out.println("Class: " + parsed.className);
-                    System.out.println("Methods:" + parsed.publicMethods);
+                        JavaSourceParser.ParsedJavaFile parsed = parser.parse(path);
+                        String fqn = parsed.packageName + "." + parsed.className;
 
-                    String fullSource = Files.readString(filePath);
+                        List<ClassInfo> dependents = classIndex.findDependentsOf(fqn);
+                        for (ClassInfo dep : dependents) {
 
-                    String testContent = aiService.generateTestClass(new AIInput(parsed.packageName, parsed.className, fullSource, parsed.publicMethods), debugPrompt, classIndex);
+                            if (dep.isTestClass) {
+                                System.out.println("Skipping test-class dependency: " + dep.fullyQualifiedName);
+                                continue;
+                            }
 
-                    if (dryRun) {
-                        System.out.println("\n--- BEGIN GENERATED TEST ---\n");
-                        System.out.println(testContent);
-                        System.out.println("\n--- END GENERATED TEST ---\n");
-                    } else {
-                        Path testPath = testWriter.writeTestFile(projectPath, parsed.packageName, parsed.className, TestOutputFormatter.clean(testContent));
-                        System.out.println("Test written to: " + testPath);
+                            System.out.println("Dependent class found: " + dep.fullyQualifiedName);
+                            filesToGenerate.add(dep.filePath);
+                        }
                     }
+                }
+            }
+
+            for (Path filePath : filesToGenerate) {
+                totalProcessed++;
+
+                JavaSourceParser.ParsedJavaFile parsed = parser.parse(filePath);
+
+                System.out.println("Package: " + parsed.packageName);
+                System.out.println("Class: " + parsed.className);
+                System.out.println("Methods:" + parsed.publicMethods);
+
+                String fullSource = Files.readString(filePath);
+
+                String testContent = aiService.generateTestClass(new AIInput(parsed.packageName, parsed.className, fullSource, parsed.publicMethods), debugPrompt, classIndex);
+
+                if (dryRun) {
+                    System.out.println("\n--- BEGIN GENERATED TEST ---\n");
+                    System.out.println(testContent);
+                    System.out.println("\n--- END GENERATED TEST ---\n");
+                } else {
+                    Path testFilePath = testWriter.getTestFilePath(projectPath, parsed.packageName, parsed.className);
+
+                    if (Files.exists(testFilePath)) {
+                        switch (overwriteMode.toLowerCase()) {
+                            case "skip" -> {
+                                System.out.println("⏩ Skipped existing test file: " + testFilePath.getFileName());
+                                testsSkipped++;
+                                continue;
+                            }
+                            case "warn" -> {
+                                System.out.println("⚠️ Overwriting existing test file: " + testFilePath.getFileName());
+                                break;
+                            }
+                            case "overwrite" -> {
+                                break;
+                            }
+                            default -> {
+                                System.out.println("⚠️ Unknown overwrite strategy: " + overwriteMode + ". Defaulting to 'warn'");
+                                break;
+                            }
+                        }
+                    }
+
+                    testWriter.writeTestFile(projectPath, parsed.packageName, parsed.className, TestOutputFormatter.clean(testContent));
+                    testsWritten++;
+                    System.out.println("Test written to: " + testFilePath);
                 }
             }
 
         } catch (Exception e) {
             System.err.println("Error during Git diff or parsing: " + e.getMessage());
+            testsErrored++;
             e.printStackTrace();
         }
+
+        System.out.println("\n Summary:");
+        System.out.println("   Classes processed: " + totalProcessed);
+        System.out.println("   Test files written: " + testsWritten);
+        System.out.println("   Skipped (existing): " + testsSkipped);
+        System.out.println("   Errors: " + testsErrored);
+
     }
 }

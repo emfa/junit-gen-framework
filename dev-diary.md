@@ -286,3 +286,49 @@ This is now a core requirement for the tool moving forward (v0.2+)
 - Demonstrated real 100% code coverage on a tested class
 
 ### -----------------------------------------------------------------------------------------------------------------------------
+
+## 🗓️ April 25, 2025
+
+### ✅ What was done:
+
+#### ✔️ Dependency-Based Test Regeneration
+- Tool now detects staged files and all dependent classes via `ClassIndex`
+- Automatically generates tests for:
+  - Changed file
+  - Any class that imports or uses the changed class
+- Duplicates are de-duped via `Set<Path>`
+
+#### ✔️ Test File Existence Strategy
+- Added CLI flag: `--test-overwrite=skip|warn|overwrite`
+- If a test file already exists:
+  - `skip` → safely skip writing
+  - `warn` → log message and proceed
+  - `overwrite` → replace without warning
+- Default behavior = `warn`
+
+#### ✔️ CLI Summary Report
+- Tool prints summary at the end:
+  - ✅ Tests written
+  - ⏩ Skipped
+  - ❌ Errors
+  - 📁 Total classes processed
+
+#### ✔️ Manual File & Folder Mode
+- Added `--file=...` flag to target a specific `.java` file
+- Added `--folder=...` flag to process all `.java` files recursively
+- Filters out test files and non-java files
+- Fully bypasses Git diff mode
+
+#### 🧪 Validation:
+- All new modes tested:
+  - Regeneration based on staged + dependent files
+  - Smart overwrite handling
+  - CLI summary accurate
+  - Manual file/folder test generation worked without staging
+
+---
+
+### 🏷️ Milestone: `v0.3`
+**Smarter CLI, safer overwrites, flexible input modes, and full regeneration logic**
+
+### -----------------------------------------------------------------------------------------------------------------------------
